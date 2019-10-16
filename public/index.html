@@ -1,0 +1,95 @@
+<html>
+  <head>
+    <title>SSH Terminal</title>
+  
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="/term.js"></script>
+    <meta http-equiv="Content-Security-Policy" content="default-src *; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline' 'unsafe-eval' http://www.google.com">
+    <script>
+      window.addEventListener('load', function() {
+        var terminalContainer = document.getElementById('terminal-container');
+        var term = new Terminal({ cursorBlink: true });
+        term.open(terminalContainer);
+
+        var terminalContainer1 = document.getElementById('terminal-container-1');
+        var term1 = new Terminal({ cursorBlink: true });
+        term1.open(terminalContainer1);
+
+        var socket = io.connect();
+        let firstEnter = false;
+        socket.on('connect', function() {
+          term.write('\r\n*** Connected to backend***\r\n');
+
+          // emits 'connect-ssh' events to make SSH connection
+          socket.emit('connect-ssh', [{terminal: 1, username:'rmn', host: 'localhost', password: 'qwerty'}]);
+
+          // Browser -> Backend
+          // listener to read command data from terminal 1 
+          term.on('data', function(command) {
+            let data = {
+              terminal: 1,
+              host: 'localhost',
+              command
+            } 
+            console.log('command', command);
+            
+            if(command == '\r'){
+              command = '\n\r'; 
+            }
+            term.write(command) 
+            // emit 'execute-cmd' event to execute typed command on connected server
+            socket.emit('execute-cmd', data);
+          });
+
+          // Backend -> Browser
+          // listen event 'cmd-output' to get data back to terminal 2
+          socket.on('cmd-output', function(res) {
+            
+              if(res.data.charAt(res.data.length - 2) === '$'){
+                firstEnter = true;
+              }
+              if( firstEnter && res.data.lastIndexOf('\n') != -1 || res.data.lastIndexOf('\r') != -1) {
+                firstEnter = false;
+              }
+              if (!firstEnter && res.data.lastIndexOf('$') == -1){
+                term1.write(res.data);
+              }
+          });
+
+          socket.on('disconnect', function() {
+            term.write('\r\n*** Disconnected from backend***\r\n');
+          });
+        });
+      }, false);
+    </script>
+    <style>
+
+body {
+        font-family: helvetica, sans-serif, arial;
+        font-size: 1em;
+        color: #111;
+      }
+      h1 {
+        text-align: center;
+      }
+      .terminal-container {
+        width: 50%;
+        height: 600px;
+        padding: 2px;
+      }
+      .terminal-container .terminal {
+        background-color: #111;
+        color: #fafafa;
+        padding: 2px;
+      }
+      .terminal-container .terminal:focus .terminal-cursor {
+        background-color: #fafafa;
+      }
+    </style>
+
+    </head>
+  <body>
+    <div class="terminal-container" id="terminal-container"></div>
+    <div class="terminal-container" id="terminal-container-1"></div>
+   </body>
+</html>

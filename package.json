@@ -1,0 +1,21 @@
+{
+  "name": "assignmentapp",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "nodemon index.js"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "express": "^4.17.1",
+    "lodash": "^4.17.15",
+    "socket.io": "^2.3.0",
+    "ssh2": "^0.8.5",
+    "term": "0.0.2",
+    "term.js": "0.0.7",
+    "xterm": "^4.1.0"
+  }
+}
